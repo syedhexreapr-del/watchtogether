@@ -9,6 +9,8 @@ let applyingRemoteState = false;
 let previousPlayerTime = 0;
 let loadingTimer;
 let playerInitializing = false;
+let preloadingVideoId = "";
+let preloadedVideoId = "";
 
 const mediaPlayer = document.getElementById("media-player");
 
@@ -33,6 +35,7 @@ function onPlayerReady(event) {
   iframe.setAttribute("allowfullscreen", "");
   console.log("YouTube player ready");
   if (activeSource?.type === "youtube") loadYouTubeSource(activeSource);
+  else if (preloadingVideoId) player.cueVideoById({ videoId: preloadingVideoId, startSeconds: 0 });
   window.setInterval(() => {
     if (!videoReady || !window.isRoomHost || applyingRemoteState || activeSource?.type !== "youtube") return;
     const now = player.getCurrentTime();
@@ -70,6 +73,8 @@ window.getVideoSource = getVideoSource;
 function loadRoomVideo(source) {
   activeSource = source;
   videoReady = false;
+  document.getElementById("video-thumbnail-preload").hidden = true;
+  document.querySelector(".player-frame").classList.remove("has-thumbnail-preview");
   document.getElementById("player-placeholder").hidden = true;
   const panel = document.getElementById("player-loading");
   panel.classList.remove("has-error");
@@ -109,6 +114,18 @@ window.loadRoomVideo = loadRoomVideo;
 function loadYouTubeSource(source) {
   if (!playerReady || !source?.videoId) return;
   document.getElementById("player").hidden = false;
+  if (preloadedVideoId === source.videoId && player.getPlayerState() === YT.PlayerState.CUED) {
+    preloadingVideoId = "";
+    preloadedVideoId = "";
+    videoReady = true;
+    setPlayerLoading(false);
+    if (pendingPlayback) applyPlayback(pendingPlayback);
+    return;
+  }
+  // If this video is already being cued in the background, let that request finish.
+  if (preloadingVideoId === source.videoId) return;
+  preloadingVideoId = "";
+  preloadedVideoId = "";
   player.cueVideoById({ videoId: source.videoId, startSeconds: pendingPlayback?.currentTime || 0 });
 }
 
@@ -155,6 +172,15 @@ window.applyPlayback = applyPlayback;
 
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.CUED) {
+    const cuedVideoId = player.getVideoData()?.video_id;
+    if (!activeSource && preloadingVideoId && cuedVideoId === preloadingVideoId) {
+      preloadedVideoId = preloadingVideoId;
+      return;
+    }
+    if (activeSource?.type === "youtube" && preloadingVideoId === activeSource.videoId) {
+      preloadingVideoId = "";
+      preloadedVideoId = "";
+    }
     videoReady = true;
     setPlayerLoading(false);
     if (pendingPlayback) applyPlayback(pendingPlayback);
@@ -166,6 +192,15 @@ function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.PLAYING) emitPlayback("play", player.getCurrentTime());
   if (event.data === YT.PlayerState.PAUSED) emitPlayback("pause", player.getCurrentTime());
 }
+
+window.hasActiveRoomVideo = () => Boolean(activeSource);
+window.preloadYouTubeVideo = (videoId) => {
+  if (!/^[\w-]{11}$/.test(videoId) || activeSource || preloadingVideoId === videoId || preloadedVideoId === videoId) return;
+  preloadingVideoId = videoId;
+  preloadedVideoId = "";
+  ensureYouTubeApi();
+  if (playerReady) player.cueVideoById({ videoId, startSeconds: 0 });
+};
 
 function onPlayerError(event) {
   console.error("YouTube onError code:", event.data);

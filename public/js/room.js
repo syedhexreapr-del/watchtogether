@@ -70,6 +70,46 @@ function copyInviteLink() {
 document.getElementById("copy-link").addEventListener("click", copyInviteLink);
 document.getElementById("invite-again").addEventListener("click", copyInviteLink);
 
+const videoUrlInput = document.getElementById("video-url");
+const videoThumbnail = document.getElementById("video-thumbnail-preload");
+const playerFrame = document.querySelector(".player-frame");
+let thumbnailVideoId = "";
+
+function updateVideoPreview() {
+  const pastedUrl = videoUrlInput.value.trim();
+  const source = getVideoSource(pastedUrl);
+  const videoId = source?.type === "youtube" ? source.videoId : "";
+  if (!videoId) {
+    thumbnailVideoId = "";
+    videoThumbnail.hidden = true;
+    playerFrame.classList.remove("has-thumbnail-preview");
+    return;
+  }
+  if (thumbnailVideoId === videoId) return;
+
+  thumbnailVideoId = videoId;
+  videoThumbnail.dataset.videoId = videoId;
+  videoThumbnail.dataset.fallback = "false";
+  videoThumbnail.hidden = false;
+  playerFrame.classList.add("has-thumbnail-preview");
+  videoThumbnail.src = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+  // Prepare the iframe/API while the host is deciding to load the video.
+  if (!window.hasActiveRoomVideo?.()) window.preloadYouTubeVideo?.(videoId);
+}
+
+videoUrlInput.addEventListener("input", updateVideoPreview);
+videoThumbnail.addEventListener("error", () => {
+  const failedVideoId = videoThumbnail.dataset.videoId;
+  if (!failedVideoId || failedVideoId !== thumbnailVideoId) return;
+  if (videoThumbnail.dataset.fallback !== "true") {
+    videoThumbnail.dataset.fallback = "true";
+    videoThumbnail.src = `https://i.ytimg.com/vi/${failedVideoId}/hqdefault.jpg`;
+    return;
+  }
+  videoThumbnail.hidden = true;
+  playerFrame.classList.remove("has-thumbnail-preview");
+});
+
 document.getElementById("load-video").addEventListener("click", () => {
   const source = getVideoSource(
     document.getElementById("video-url").value,
@@ -83,7 +123,7 @@ document.getElementById("load-video").addEventListener("click", () => {
   }
   if (source.type === "youtube") console.log("Extracted YouTube video ID:", source.videoId);
   socket.emit("set-video", { roomId, source });
-  document.getElementById("video-url").value = "";
+  videoUrlInput.value = "";
   document.getElementById("subtitle-url").value = "";
   document.getElementById("subtitle-language").value = "";
   document.getElementById("subtitle-language-code").value = "";

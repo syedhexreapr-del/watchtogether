@@ -513,6 +513,23 @@ a {
   border-radius: 8px;
   overflow: hidden;
 }
+.video-thumbnail-preload {
+  position: absolute;
+  z-index: 0;
+  inset: -4%;
+  width: 108%;
+  height: 108%;
+  object-fit: cover;
+  filter: blur(10px) brightness(0.38);
+  transform: scale(1.02);
+  pointer-events: none;
+}
+.video-thumbnail-preload[hidden] {
+  display: none;
+}
+.player-frame.has-thumbnail-preview .player-placeholder {
+  background: linear-gradient(180deg, #080a1040, #080a10b8);
+}
 .player-frame #player {
   position: absolute;
   inset: 0;
@@ -1441,6 +1458,7 @@ body,
 .player-error-link[hidden] {
   display: none;
 }
+.preview-spinner[hidden] { display: none; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
