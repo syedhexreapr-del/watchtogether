@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090b12" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>WatchTogether — Room</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="room-page">
+    <main class="room-shell">
+      <header class="room-header">
+        <a class="brand" href="/"
+          ><span class="brand-mark">▶</span> WatchTogether</a
+        >
+        <div class="room-heading">
+          <span class="room-live"><i></i> LIVE ROOM</span>
+          <h1 id="room-title">Watch party</h1>
+        </div>
+        <button id="copy-link" class="button button-outline">
+          <span aria-hidden="true">↗</span> Copy invite link
+        </button>
+      </header>
+      <div class="room-layout">
+        <section class="watch-column">
+          <div class="player-card">
+            <div class="player-frame">
+              <div id="player"></div>
+              <video id="media-player" controls playsinline preload="metadata" hidden></video>
+              <div id="player-placeholder" class="player-placeholder">
+                <span class="placeholder-icon">▶</span>
+                <h2>No video playing</h2>
+                <p>The host can add a YouTube link or direct video file URL below.</p>
+              </div>
+              <div
+                id="player-loading"
+                class="player-loading"
+                role="status"
+                aria-live="polite"
+                hidden
+              >
+                <span class="loading-spinner" aria-hidden="true"></span>
+                <span id="player-loading-text">Loading video…</span>
+                <a id="player-error-link" class="player-error-link" href="#" target="_blank" rel="noopener noreferrer" hidden>
+                  Try watching on YouTube ↗
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="video-controls">
+            <div class="host-tools" id="host-tools">
+              <label for="video-url">Video link</label>
+              <div class="video-form">
+                <input
+                  id="video-url"
+                  type="url"
+                  placeholder="YouTube or direct MP4 / WebM URL"
+                  inputmode="url"
+                  autocomplete="off"
+                  spellcheck="false"
+                  aria-label="Video link"
+                />
+                <button id="load-video" class="button button-primary">
+                  Load Video
+                </button>
+              </div>
+              <details class="subtitle-options">
+                <summary>Add subtitles (optional)</summary>
+                <label for="subtitle-url">Subtitle file URL (.vtt)</label>
+                <input id="subtitle-url" type="url" placeholder="https://example.com/subtitles.vtt" inputmode="url" />
+                <label for="subtitle-language">Subtitle language</label>
+                <input id="subtitle-language" type="text" maxlength="35" placeholder="English (en)" />
+                <label for="subtitle-language-code">Language code</label>
+                <input id="subtitle-language-code" type="text" maxlength="12" placeholder="en, ur, fr" />
+                <small>For direct video links, paste a WebVTT (.vtt) subtitle URL. YouTube captions stay in YouTube’s player menu. Remote media and subtitle servers must allow browser playback (CORS).</small>
+              </details>
+            </div>
+            <div id="guest-note" class="guest-note" hidden>
+              Only the host can change the video or playback.
+            </div>
+            <div class="playback-controls">
+              <button id="play-btn" class="control-button" aria-label="Play">
+                ▶</button
+              ><button id="pause-btn" class="control-button" aria-label="Pause">
+                Ⅱ</button
+              ><span class="control-caption">Playback follows the host</span
+              ><span id="sync-status" class="sync-status"><i></i> Synced</span>
+            </div>
+          </div>
+          <section class="participants-card">
+            <div class="section-heading">
+              <div>
+              <span class="eyebrow">IN THIS ROOM</span>
+                <h2>
+                  Watching together
+                  <span id="participant-count" class="count-pill">1</span>
+                </h2>
+              </div>
+              <button id="invite-again" class="text-button">
+                Invite someone <span>↗</span>
+              </button>
+            </div>
+            <ul id="participants" class="participants-list"></ul>
+          </section>
+        </section>
+        <aside class="chat-card">
+          <div class="chat-header">
+            <div>
+              <span class="eyebrow">MESSAGES</span>
+              <h2>Room chat</h2>
+            </div>
+            <span class="chat-lock">ROOM ONLY</span>
+          </div>
+          <div id="messages" class="messages" aria-live="polite">
+            <div class="chat-empty">
+              <span>✳</span><b>It’s quiet in here.</b
+              ><small>Break the ice with a hello.</small>
+            </div>
+          </div>
+          <form id="chat-form" class="chat-form">
+            <input
+              id="chat-input"
+              maxlength="500"
+              placeholder="Write a message…"
+              autocomplete="off"
+              aria-label="Write a chat message"
+            /><button id="send-btn" type="submit" aria-label="Send message">
+              ↑
+            </button>
+          </form>
+          <p class="chat-footnote">Be kind. You’re watching together.</p>
+        </aside>
+      </div>
+      <footer class="room-footer">
+        <span>YouTube is embedded; direct video links play from their source. No video files are uploaded.</span>
+      </footer>
+    </main>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/youtube.js"></script>
+    <script src="/js/room.js"></script>
+    <script src="/js/chat.js"></script>
+  </body>
+</html>

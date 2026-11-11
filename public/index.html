@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090b12" />
+    <title>WatchTogether</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="home-page">
+    <main class="home-shell">
+      <nav class="topbar">
+        <a class="brand" href="/"
+          ><span class="brand-mark">▶</span> WatchTogether</a
+        ><span class="topbar-note">A shared room for YouTube</span>
+      </nav>
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">WATCH TOGETHER</div>
+          <h1>Make tonight<br />a movie night.</h1>
+          <p>
+           Start a room, share the link, and watch a YouTube video with your
+            friends. Playback stays in sync and the chat stays close by.
+          </p>
+          <div class="create-card">
+            <label for="user-name">Your name</label>
+            <div class="create-fields">
+              <input
+                id="user-name"
+                maxlength="24"
+                placeholder="Your name"
+                autocomplete="name"
+              /><button id="create-room" class="button button-primary">
+                Create a room
+              </button>
+            </div>
+            <small>No account required. You can invite people after the room opens.</small>
+          </div>
+          <div class="feature-points">
+            <span>Synced playback</span><span>Room chat</span><span>YouTube embeds</span>
+          </div>
+        </div>
+      </section>
+      <footer class="home-footer">
+        <span>Watch together, wherever you are.</span>
+        <span>Only YouTube videos are embedded. No video files are uploaded.</span>
+      </footer>
+    </main>
+    <script src="/js/index.js"></script>
+  </body>
+</html>
