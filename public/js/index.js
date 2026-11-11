@@ -20,3 +20,23 @@ function createRoom() {
 }
 
 nameInput.addEventListener("input", () => nameInput.setCustomValidity(""));
+
+// Keep the homepage's cursor response on the compositor and disable it for touch/reduced-motion devices.
+const pointerGlow = document.getElementById("pointer-glow");
+const canUsePointerGlow = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (pointerGlow && canUsePointerGlow && !prefersReducedMotion) {
+  let pointerFrame = 0;
+  let pointerX = window.innerWidth / 2;
+  let pointerY = window.innerHeight / 2;
+  document.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "touch") return;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    if (pointerFrame) return;
+    pointerFrame = window.requestAnimationFrame(() => {
+      pointerGlow.style.transform = `translate3d(${pointerX}px, ${pointerY}px, 0) translate(-50%, -50%)`;
+      pointerFrame = 0;
+    });
+  }, { passive: true });
+}

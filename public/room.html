@@ -15,6 +15,16 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body class="room-page">
+    <section id="join-gate" class="join-gate" role="dialog" aria-modal="true" aria-labelledby="join-title" hidden>
+      <form id="join-form" class="join-card">
+        <span class="eyebrow">JOIN THE ROOM</span>
+        <h1 id="join-title">What should we call you?</h1>
+        <p>Choose the name everyone in this room will see.</p>
+        <label for="guest-name">Your name</label>
+        <input id="guest-name" maxlength="24" autocomplete="name" placeholder="Enter your name" required />
+        <button class="button button-primary" type="submit">Join watch party</button>
+      </form>
+    </section>
     <main class="room-shell">
       <header class="room-header">
         <a class="brand" href="/"

@@ -139,6 +139,17 @@ io.on("connection", (socket) => {
   });
 });
 
+// Send a small room clock snapshot so guests can correct drift without reloading the source.
+setInterval(() => {
+  for (const [roomId, room] of rooms) {
+    if (!room.source || !room.isPlaying || Object.keys(room.users).length < 2) continue;
+    io.to(roomId).emit("sync-state", {
+      currentTime: playbackTime(room),
+      isPlaying: true,
+    });
+  }
+}, 4000);
+
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`WatchTogether running on port ${PORT}`);
 });

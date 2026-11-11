@@ -2,7 +2,7 @@
 const socket = io();
 const params = new URLSearchParams(window.location.search);
 const roomId = params.get("room");
-const userName = (params.get("name") || "Guest").trim().slice(0, 24) || "Guest";
+let userName = (params.get("name") || "Guest").trim().slice(0, 24) || "Guest";
 window.socket = socket;
 window.roomId = roomId;
 window.isRoomHost = false;
@@ -18,7 +18,29 @@ let toastTimer;
 
 if (!roomId) window.location.replace("/");
 title.textContent = params.get("roomName") || "Your watch party";
-socket.emit("join-room", { roomId, userName });
+
+const joinGate = document.getElementById("join-gate");
+const guestNameInput = document.getElementById("guest-name");
+function joinRoomWithName(name) {
+  userName = name.trim().slice(0, 24);
+  if (!userName) return;
+  joinGate.hidden = true;
+  params.set("name", userName);
+  history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  socket.emit("join-room", { roomId, userName });
+}
+
+if (params.get("name") && params.get("name") !== "Guest") {
+  joinGate.hidden = true;
+  socket.emit("join-room", { roomId, userName });
+} else {
+  joinGate.hidden = false;
+  window.setTimeout(() => guestNameInput.focus(), 0);
+  document.getElementById("join-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    joinRoomWithName(guestNameInput.value);
+  });
+}
 
 function showToast(message) {
   toast.textContent = message;
@@ -104,7 +126,13 @@ socket.on("seek", (currentTime) => {
   applyPlayback({
     currentTime,
     isPlaying: pendingPlayback ? pendingPlayback.isPlaying : false,
+    forceSeek: true,
   });
+});
+socket.on("sync-state", (state) => {
+  if (!window.isRoomHost && state && Number.isFinite(state.currentTime)) {
+    applyPlayback({ currentTime: state.currentTime, isPlaying: state.isPlaying });
+  }
 });
 socket.on("host-changed", () => {
   setHostMode(true);

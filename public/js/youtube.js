@@ -36,7 +36,7 @@ function onPlayerReady(event) {
   window.setInterval(() => {
     if (!videoReady || !window.isRoomHost || applyingRemoteState || activeSource?.type !== "youtube") return;
     const now = player.getCurrentTime();
-    if (Math.abs(now - previousPlayerTime) > 2.5) emitSeek(now);
+    if (Math.abs(now - previousPlayerTime) > 1.5) emitSeek(now);
     previousPlayerTime = now;
   }, 500);
 }
@@ -116,7 +116,6 @@ mediaPlayer.addEventListener("loadedmetadata", () => {
   videoReady = true;
   setPlayerLoading(false);
   if (pendingPlayback) applyPlayback(pendingPlayback);
-  if (window.isRoomHost) socketEmit("playback-state", { roomId: window.roomId, currentTime: mediaPlayer.currentTime, isPlaying: !mediaPlayer.paused });
 });
 mediaPlayer.addEventListener("error", () => {
   if (activeSource?.type === "direct") showPlayerError("This video link could not be played. Use a direct MP4/WebM link, or a site that allows embedding.");
@@ -137,13 +136,16 @@ function applyPlayback(action) {
   pendingPlayback = { currentTime: Number.isFinite(action.currentTime) ? Math.max(0, action.currentTime) : 0, isPlaying: Boolean(action.isPlaying) };
   if (!videoReady) return;
   applyingRemoteState = true;
+  const localTime = currentPlaybackTime();
+  const shouldCorrectDrift = action.forceSeek || Math.abs(localTime - pendingPlayback.currentTime) > 2.5;
   if (activeSource?.type === "youtube") {
-    if (player.getPlayerState() !== YT.PlayerState.CUED) player.seekTo(pendingPlayback.currentTime, true);
+    // Avoid a seek on every play/pause packet; seek only for an explicit seek or visible drift.
+    if (shouldCorrectDrift && player.getPlayerState() !== YT.PlayerState.CUED) player.seekTo(pendingPlayback.currentTime, true);
     previousPlayerTime = pendingPlayback.currentTime;
     if (pendingPlayback.isPlaying) player.playVideo();
     else if (player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
   } else {
-    mediaPlayer.currentTime = pendingPlayback.currentTime;
+    if (shouldCorrectDrift) mediaPlayer.currentTime = pendingPlayback.currentTime;
     if (pendingPlayback.isPlaying) mediaPlayer.play().catch(() => {});
     else mediaPlayer.pause();
   }
