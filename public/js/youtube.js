@@ -9,8 +9,6 @@ let applyingRemoteState = false;
 let previousPlayerTime = 0;
 let loadingTimer;
 let playerInitializing = false;
-let preloadingVideoId = "";
-let preloadedVideoId = "";
 
 const mediaPlayer = document.getElementById("media-player");
 
@@ -35,7 +33,7 @@ function onPlayerReady(event) {
   iframe.setAttribute("allowfullscreen", "");
   console.log("YouTube player ready");
   if (activeSource?.type === "youtube") loadYouTubeSource(activeSource);
-  else if (preloadingVideoId) player.cueVideoById({ videoId: preloadingVideoId, startSeconds: 0 });
+  else iframe.hidden = true;
   window.setInterval(() => {
     if (!videoReady || !window.isRoomHost || applyingRemoteState || activeSource?.type !== "youtube") return;
     const now = player.getCurrentTime();
@@ -114,18 +112,6 @@ window.loadRoomVideo = loadRoomVideo;
 function loadYouTubeSource(source) {
   if (!playerReady || !source?.videoId) return;
   document.getElementById("player").hidden = false;
-  if (preloadedVideoId === source.videoId && player.getPlayerState() === YT.PlayerState.CUED) {
-    preloadingVideoId = "";
-    preloadedVideoId = "";
-    videoReady = true;
-    setPlayerLoading(false);
-    if (pendingPlayback) applyPlayback(pendingPlayback);
-    return;
-  }
-  // If this video is already being cued in the background, let that request finish.
-  if (preloadingVideoId === source.videoId) return;
-  preloadingVideoId = "";
-  preloadedVideoId = "";
   player.cueVideoById({ videoId: source.videoId, startSeconds: pendingPlayback?.currentTime || 0 });
 }
 
@@ -171,16 +157,10 @@ function applyPlayback(action) {
 window.applyPlayback = applyPlayback;
 
 function onPlayerStateChange(event) {
+  // Ignore the empty/hidden player while the host is only pasting a link.
+  // The source becomes shareable only after the host presses Load Video.
+  if (activeSource?.type !== "youtube") return;
   if (event.data === YT.PlayerState.CUED) {
-    const cuedVideoId = player.getVideoData()?.video_id;
-    if (!activeSource && preloadingVideoId && cuedVideoId === preloadingVideoId) {
-      preloadedVideoId = preloadingVideoId;
-      return;
-    }
-    if (activeSource?.type === "youtube" && preloadingVideoId === activeSource.videoId) {
-      preloadingVideoId = "";
-      preloadedVideoId = "";
-    }
     videoReady = true;
     setPlayerLoading(false);
     if (pendingPlayback) applyPlayback(pendingPlayback);
@@ -194,12 +174,10 @@ function onPlayerStateChange(event) {
 }
 
 window.hasActiveRoomVideo = () => Boolean(activeSource);
-window.preloadYouTubeVideo = (videoId) => {
-  if (!/^[\w-]{11}$/.test(videoId) || activeSource || preloadingVideoId === videoId || preloadedVideoId === videoId) return;
-  preloadingVideoId = videoId;
-  preloadedVideoId = "";
+window.prepareYouTubePlayer = (videoId) => {
+  if (!/^[\w-]{11}$/.test(videoId) || activeSource) return;
+  // Load the API ahead of time, but don't cue the video until Load Video is pressed.
   ensureYouTubeApi();
-  if (playerReady) player.cueVideoById({ videoId, startSeconds: 0 });
 };
 
 function onPlayerError(event) {

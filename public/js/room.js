@@ -95,8 +95,8 @@ function updateVideoPreview() {
   videoThumbnail.hidden = false;
   playerFrame.classList.add("has-thumbnail-preview");
   videoThumbnail.src = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
-  // Prepare the iframe/API while the host is deciding to load the video.
-  if (!window.hasActiveRoomVideo?.()) window.preloadYouTubeVideo?.(videoId);
+  // Prepare the player API, while leaving playback behind the Load Video button.
+  if (!window.hasActiveRoomVideo?.()) window.prepareYouTubePlayer?.(videoId);
 }
 
 videoUrlInput.addEventListener("input", updateVideoPreview);
