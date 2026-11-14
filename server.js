@@ -30,7 +30,7 @@ function emitParticipants(roomId, room) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("join-room", ({ roomId, userName } = {}) => {
+  socket.on("join-room", ({ roomId, userName, hostIntent = false } = {}) => {
     if (typeof roomId !== "string" || !/^[a-zA-Z0-9_-]{1,40}$/.test(roomId)) return;
 
     // Leave any previous room if this socket reconnects into a different one.
@@ -40,6 +40,12 @@ io.on("connection", (socket) => {
 
     let room = rooms.get(roomId);
     if (!room) {
+      // Only a room created from the home page may initialize a room. An expired
+      // or mistyped guest invite must never silently make its visitor the host.
+      if (!hostIntent) {
+        socket.emit("room-not-found");
+        return;
+      }
       room = { hostId: socket.id, users: {}, source: null, isPlaying: false, currentTime: 0, updatedAt: Date.now() };
       rooms.set(roomId, room);
     }

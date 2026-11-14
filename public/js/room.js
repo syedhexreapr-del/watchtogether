@@ -18,6 +18,7 @@ let toastTimer;
 
 if (!roomId) window.location.replace("/");
 title.textContent = params.get("roomName") || "Your watch party";
+setHostMode(false);
 
 const joinGate = document.getElementById("join-gate");
 const guestNameInput = document.getElementById("guest-name");
@@ -27,12 +28,12 @@ function joinRoomWithName(name) {
   joinGate.hidden = true;
   params.set("name", userName);
   history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
-  socket.emit("join-room", { roomId, userName });
+  socket.emit("join-room", { roomId, userName, hostIntent: params.get("host") === "1" });
 }
 
 if (params.get("name") && params.get("name") !== "Guest") {
   joinGate.hidden = true;
-  socket.emit("join-room", { roomId, userName });
+  socket.emit("join-room", { roomId, userName, hostIntent: params.get("host") === "1" });
 } else {
   joinGate.hidden = false;
   window.setTimeout(() => guestNameInput.focus(), 0);
@@ -51,6 +52,7 @@ function showToast(message) {
 
 function copyInviteLink() {
   const invite = new URL(window.location.href);
+  invite.searchParams.delete("host");
   invite.searchParams.set("name", "Guest");
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(invite.toString()).then(() => showToast("Invite link copied")).catch(() => showToast(invite.toString()));
@@ -154,6 +156,10 @@ socket.on("room-state", (state) => {
     pendingPlayback = { currentTime: state.currentTime, isPlaying: state.isPlaying };
     loadRoomVideo(state.source);
   }
+});
+socket.on("room-not-found", () => {
+  showToast("This room is unavailable. Ask the host for a fresh invite link.");
+  window.setTimeout(() => window.location.replace("/"), 2600);
 });
 socket.on("video-changed", (source) => {
   console.log("video-changed event:", source);

@@ -15,7 +15,7 @@ function createRoom() {
   }
   nameInput.setCustomValidity("");
   const roomId = Math.random().toString(36).slice(2, 8);
-  const query = new URLSearchParams({ room: roomId, name: userName });
+  const query = new URLSearchParams({ room: roomId, name: userName, host: "1" });
   window.location.href = `/room.html?${query}`;
 }
 
