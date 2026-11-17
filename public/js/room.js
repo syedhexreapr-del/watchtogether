@@ -2,6 +2,21 @@
 const socket = io();
 const params = new URLSearchParams(window.location.search);
 const roomId = params.get("room");
+const participantStorageKey = `watchtogether-participant:${roomId}`;
+let participantId;
+try {
+  participantId = localStorage.getItem(participantStorageKey);
+  if (!participantId) {
+    participantId =
+      window.crypto?.randomUUID?.() ||
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(participantStorageKey, participantId);
+  }
+} catch (_) {
+  participantId =
+    window.crypto?.randomUUID?.() ||
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 let userName = (params.get("name") || "Guest").trim().slice(0, 24) || "Guest";
 window.socket = socket;
 window.roomId = roomId;
@@ -27,13 +42,27 @@ function joinRoomWithName(name) {
   if (!userName) return;
   joinGate.hidden = true;
   params.set("name", userName);
-  history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
-  socket.emit("join-room", { roomId, userName, hostIntent: params.get("host") === "1" });
+  history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}?${params.toString()}`,
+  );
+  socket.emit("join-room", {
+    roomId,
+    userName,
+    participantId,
+    hostIntent: params.get("host") === "1",
+  });
 }
 
 if (params.get("name") && params.get("name") !== "Guest") {
   joinGate.hidden = true;
-  socket.emit("join-room", { roomId, userName, hostIntent: params.get("host") === "1" });
+  socket.emit("join-room", {
+    roomId,
+    userName,
+    participantId,
+    hostIntent: params.get("host") === "1",
+  });
 } else {
   joinGate.hidden = false;
   window.setTimeout(() => guestNameInput.focus(), 0);
@@ -55,7 +84,10 @@ function copyInviteLink() {
   invite.searchParams.delete("host");
   invite.searchParams.set("name", "Guest");
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(invite.toString()).then(() => showToast("Invite link copied")).catch(() => showToast(invite.toString()));
+    navigator.clipboard
+      .writeText(invite.toString())
+      .then(() => showToast("Invite link copied"))
+      .catch(() => showToast(invite.toString()));
   } else {
     const temporary = document.createElement("textarea");
     temporary.value = invite.toString();
@@ -70,7 +102,9 @@ function copyInviteLink() {
 }
 
 document.getElementById("copy-link").addEventListener("click", copyInviteLink);
-document.getElementById("invite-again").addEventListener("click", copyInviteLink);
+document
+  .getElementById("invite-again")
+  .addEventListener("click", copyInviteLink);
 
 const videoUrlInput = document.getElementById("video-url");
 const videoThumbnail = document.getElementById("video-thumbnail-preload");
@@ -120,10 +154,13 @@ document.getElementById("load-video").addEventListener("click", () => {
     document.getElementById("subtitle-language-code").value,
   );
   if (!source) {
-    showToast("Use a YouTube link or direct MP4/WebM URL. Subtitles must be .vtt.");
+    showToast(
+      "Use a YouTube link or direct MP4/WebM URL. Subtitles must be .vtt.",
+    );
     return;
   }
-  if (source.type === "youtube") console.log("Extracted YouTube video ID:", source.videoId);
+  if (source.type === "youtube")
+    console.log("Extracted YouTube video ID:", source.videoId);
   socket.emit("set-video", { roomId, source });
   videoUrlInput.value = "";
   document.getElementById("subtitle-url").value = "";
@@ -153,7 +190,10 @@ document.getElementById("pause-btn").addEventListener("click", () => {
 socket.on("room-state", (state) => {
   setHostMode(state.isHost);
   if (state.source) {
-    pendingPlayback = { currentTime: state.currentTime, isPlaying: state.isPlaying };
+    pendingPlayback = {
+      currentTime: state.currentTime,
+      isPlaying: state.isPlaying,
+    };
     loadRoomVideo(state.source);
   }
 });
@@ -166,8 +206,12 @@ socket.on("video-changed", (source) => {
   pendingPlayback = { currentTime: 0, isPlaying: false };
   loadRoomVideo(source);
 });
-socket.on("play", (currentTime) => applyPlayback({ currentTime, isPlaying: true }));
-socket.on("pause", (currentTime) => applyPlayback({ currentTime, isPlaying: false }));
+socket.on("play", (currentTime) =>
+  applyPlayback({ currentTime, isPlaying: true }),
+);
+socket.on("pause", (currentTime) =>
+  applyPlayback({ currentTime, isPlaying: false }),
+);
 socket.on("seek", (currentTime) => {
   applyPlayback({
     currentTime,
@@ -177,7 +221,10 @@ socket.on("seek", (currentTime) => {
 });
 socket.on("sync-state", (state) => {
   if (!window.isRoomHost && state && Number.isFinite(state.currentTime)) {
-    applyPlayback({ currentTime: state.currentTime, isPlaying: state.isPlaying });
+    applyPlayback({
+      currentTime: state.currentTime,
+      isPlaying: state.isPlaying,
+    });
   }
 });
 socket.on("host-changed", () => {
@@ -197,16 +244,21 @@ function setHostMode(isHost) {
 function renderParticipants(participants) {
   const list = document.getElementById("participants");
   list.replaceChildren();
-  document.getElementById("participant-count").textContent = participants.length;
+  document.getElementById("participant-count").textContent =
+    participants.filter((person) => person.isOnline).length;
   participants.forEach((person) => {
     const item = document.createElement("li");
     item.className = "participant";
+    item.classList.toggle("is-offline", !person.isOnline);
     const avatar = document.createElement("span");
     avatar.className = "participant-avatar";
     avatar.textContent = (person.name || "G").charAt(0).toUpperCase();
     const name = document.createElement("span");
     name.textContent = person.name;
-    item.append(avatar, name);
+    const presence = document.createElement("span");
+    presence.className = "presence-badge";
+    presence.textContent = person.isOnline ? "ONLINE" : "OFFLINE";
+    item.append(avatar, name, presence);
     if (person.isHost) {
       const badge = document.createElement("span");
       badge.className = "host-badge";
